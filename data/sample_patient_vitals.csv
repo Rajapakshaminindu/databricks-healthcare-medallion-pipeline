@@ -1,0 +1,11 @@
+patient_id,gender,age,city,glucose_level,blood_pressure,bmi,insulin,reading_timestamp
+P_1000,Female,45,Bengaluru,148,72,33.6,0,2026-08-28 10:14:22
+P_1001,Male,34,Delhi,85,66,26.6,23,2026-08-29 14:22:05
+P_1002,Female,52,Chennai,183,64,23.3,0,2026-08-30 08:45:11
+P_1003,Male,29,Ahmedabad,89,66,28.1,94,2026-08-31 16:30:40
+P_1004,Female,61,Hyderabad,137,40,43.1,168,2026-09-01 11:15:02
+P_1005,Male,48,Bhopal,116,74,25.6,0,2026-09-02 09:05:49
+P_1006,Female,38,Bengaluru,78,50,31.0,88,2026-09-03 13:50:33
+P_1007,Male,55,Delhi,115,0,35.3,0,2026-09-04 15:40:19
+P_1008,Female,24,Chennai,197,70,30.5,543,2026-09-05 17:12:00
+P_1009,Male,67,Hyderabad,125,96,0,0,2026-09-06 08:20:15
