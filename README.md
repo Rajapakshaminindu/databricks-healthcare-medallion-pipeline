@@ -1,5 +1,5 @@
 # 🏥 Automated Healthcare Patient Lakehouse ETL Pipeline
-### Production-Grade Medallion Architecture with Databricks, PySpark, Delta Lake, and Databricks SQL
+### Production-Grade Medallion Architecture with Databricks, PySpark, Delta Lake, Databricks Workflows, and SQL
 
 ![Databricks](https://img.shields.io/badge/Databricks-Lakehouse-E25A1C?style=for-the-badge&logo=databricks&logoColor=white)
 ![Apache Spark](https://img.shields.io/badge/Apache_Spark-PySpark-E25A1C?style=for-the-badge&logo=apachespark&logoColor=white)
@@ -51,6 +51,22 @@ flowchart TD
 
 ---
 
+## 🔄 Automated Orchestration (Databricks Workflows)
+
+The pipeline is automated and monitored via **Databricks Workflows (Jobs)** (`Healthcare_ETL_Orchestrator`), featuring automated task scheduling, lineage tracking, and retry policies.
+
+### ⏱️ Task Timeline & Lineage Observability
+Real-time monitoring graph demonstrating execution duration, stage timing, and automatic discovery of **2 upstream and 2 downstream Delta tables**:
+
+![Databricks Workflow Timeline Execution](docs/images/workflow_timeline_execution.png)
+
+### ⚙️ Step-by-Step Distributed Execution
+Live orchestration view executing the PySpark data quality checks, schema evolution, and Delta Lake writes:
+
+![Databricks Task Execution View](docs/images/workflow_code_execution.png)
+
+---
+
 ## 🛠️ Tech Stack & Engineering Concepts
 
 | Area | Technologies / Concepts |
@@ -68,6 +84,8 @@ flowchart TD
 ```text
 ├── README.md                              <- Project overview & architecture documentation
 ├── .gitignore                             <- Git ignore rules for Python / Databricks
+├── docs/
+│   └── images/                            <- Pipeline execution & dashboard screenshots
 ├── notebooks/
 │   └── healthcare_etl_pipeline.py         <- Production PySpark ETL pipeline script
 ├── sql/
@@ -115,17 +133,7 @@ SELECT * FROM healthcare_lakehouse.silver_patient_health VERSION AS OF 0;
 
 ---
 
-## 🔄 Automated Orchestration (Databricks Workflows)
-
-The pipeline is automated using **Databricks Workflows (Jobs)**:
-* **Job Name**: `Healthcare_ETL_Orchestrator`
-* **Schedule**: Automated daily batch execution.
-* **Fault Tolerance**: Automatic retry policy (`max_retries = 2`, `interval = 5 minutes`) to handle transient source locks.
-* **Alerting**: Email alert triggers on task failure for proactive operational monitoring.
-
----
-
-## 📊 Sample SQL Query & Analytical Output
+## 📊 Analytical SQL Queries
 
 ```sql
 SELECT 
@@ -143,13 +151,23 @@ ORDER BY
 
 ---
 
+## 📈 Downstream Analytics: Power BI Clinical Dashboard
+
+The Gold layer tables are served directly to the **Power BI Clinical Decision Support Dashboard**, enabling healthcare practitioners to explore patient cohorts and geographic risk factors:
+
+![Power BI Downstream Analytics](docs/images/powerbi_downstream_dashboard.png)
+
+👉 *View the full dashboard documentation in the companion repository: [diabetes-risk-powerbi-analysis](https://github.com/Rajapakshaminindu/diabetes-risk-powerbi-analysis).*
+
+---
+
 ## 🚀 How to Run in Databricks
 
 1. Create a Databricks Workspace (or use Databricks Community / Free Edition).
 2. Go to **Workspace** $\rightarrow$ **Users** $\rightarrow$ **Import**.
 3. Upload `notebooks/healthcare_etl_pipeline.py`.
 4. Attach to any compute cluster (Spark 3.4+ / DBR 13.0+) and click **Run All**.
-5. Inspect the generated tables under the **Catalog** browser under `healthcare_lakehouse`.
+5. Inspect the generated tables in the **Catalog** browser under `healthcare_lakehouse`.
 
 ---
 
