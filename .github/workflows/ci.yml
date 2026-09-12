@@ -33,4 +33,5 @@ jobs:
       - name: Lint Codebase
         run: |
           # Stop build if there are Python syntax errors or undefined names
-          flake8 notebooks/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Includes Databricks environment built-ins (spark, display, dbutils)
+          flake8 notebooks/ --count --select=E9,F63,F7,F82 --builtins=spark,display,dbutils --show-source --statistics
