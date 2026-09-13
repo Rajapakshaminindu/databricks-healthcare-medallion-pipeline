@@ -11,6 +11,8 @@ This document serves as the centralized Data Dictionary for the **Automated Heal
 | **Bronze** | `healthcare_lakehouse.bronze_patient_vitals` | Raw append-only telemetry ingestion with metadata audit stamps | Delta Lake |
 | **Silver** | `healthcare_lakehouse.silver_patient_health` | Cleansed patient records, nullified telemetry dropouts, enriched clinical features | Delta Lake (ACID, schema evolution) |
 | **Gold** | `healthcare_lakehouse.gold_city_health_kpi`<br/>`healthcare_lakehouse.gold_age_risk_distribution`<br/>`healthcare_lakehouse.v_clinical_escalations` | Pre-aggregated operational metrics, demographic risk matrix, and clinical escalation views | Delta Lake & Databricks SQL Views |
+| **Dimension** | `healthcare_lakehouse.dim_patient_scd2` | Slowly Changing Dimension (SCD Type 2) tracking patient demographic and clinical risk history over time | Delta Lake (ACID, MERGE) |
+
 
 ---
 
@@ -80,6 +82,30 @@ The Gold layer contains business-level aggregate tables designed for high-concur
 | `bmi_category` | `STRING` | WHO standard classification | Category confirmation (`Obese`) |
 | `diabetes_risk_score` | `STRING` | Clinical risk tier classification | Priority classification (`High Risk`) |
 | `reading_timestamp` | `TIMESTAMP` | Standardized UTC timestamp (`yyyy-MM-dd HH:mm:ss`) | Recency and temporal tracking for immediate intervention |
+
+---
+
+### 4. `healthcare_lakehouse.dim_patient_scd2`
+
+* **Type**: Delta Lake Table (Managed SCD Type 2 Dimension)  
+* **Source**: `healthcare_lakehouse.silver_patient_health`  
+* **Grain**: One row per patient version state (historical or current)  
+* **Update Method**: Delta Lake `MERGE` operation  
+* **Downstream Consumers**: Longitudinal patient studies, historical point-in-time cohort lookups  
+
+#### Schema & Column Specifications
+
+| Column Name | Data Type | Nullable | Description & SCD Type 2 Logic | Example Value |
+| :--- | :--- | :--- | :--- | :--- |
+| `patient_id` | `STRING` | No | Unique patient identifier (`P_1000` to `P_2499`). Non-unique in table across multiple versions. | `P_1000` |
+| `gender` | `STRING` | No | Biological sex / gender identity (`Male`, `Female`, `Other`). | `Female` |
+| `city` | `STRING` | No | Municipality of residence during this version interval. | `Delhi` |
+| `age_bracket` | `STRING` | No | Age demographic cohort (`18-29`, `30-49`, `50-64`, `65+`). | `30-49` |
+| `bmi_category` | `STRING` | No | WHO BMI category during this interval (`Normal`, `Overweight`, `Obese`). | `Obese` |
+| `diabetes_risk_score` | `STRING` | No | Clinical risk status during this interval (`High Risk`, `Moderate Risk`, `Low Risk`). | `High Risk` |
+| `start_date` | `DATE` | No | Date when this version of the patient profile became active. | `2026-01-01` |
+| `end_date` | `DATE` | Yes | Date when this version expired. Set to `NULL` for the currently active version. | `NULL` |
+| `is_current` | `BOOLEAN` | No | Boolean flag: `true` if this is the active current record; `false` if historical. | `true` |
 
 ---
 

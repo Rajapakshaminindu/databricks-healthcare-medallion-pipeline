@@ -117,7 +117,12 @@ Live orchestration view executing the PySpark data quality checks, schema evolut
   * **`gold_city_health_kpi`**: Patient counts, average glucose, blood pressure, BMI, and percentage of high-risk patients grouped by municipality.
   * **`gold_age_risk_distribution`**: Matrix of risk levels across age cohorts for targeted healthcare interventions.
 
+### 4. Patient History Dimension (SCD Type 2)
+* **`dim_patient_scd2`**: Tracks historical changes when patient demographic or clinical risk levels change over time.
+* Uses Delta Lake `MERGE` to automatically set `is_current = false` and `end_date = current_date()` on changed records while inserting new versions with `is_current = true`, enabling point-in-time clinical auditing.
+
 ---
+
 
 ## 🕒 Delta Lake Time Travel & Auditability
 

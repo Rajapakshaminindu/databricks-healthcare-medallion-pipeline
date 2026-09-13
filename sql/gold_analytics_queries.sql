@@ -51,3 +51,35 @@ WHERE
     diabetes_risk_score = 'High Risk'
     AND blood_pressure_clean > 130
     AND bmi >= 30.0;
+
+-- Query 4: SCD Type 2 - Retrieve Currently Active Patient Dimension Records
+SELECT 
+    patient_id,
+    gender,
+    city,
+    age_bracket,
+    bmi_category,
+    diabetes_risk_score,
+    start_date
+FROM 
+    healthcare_lakehouse.dim_patient_scd2
+WHERE 
+    is_current = true;
+
+-- Query 5: SCD Type 2 - Patient Timeline Audit (Inspect History for Specific Patients)
+SELECT 
+    patient_id,
+    city,
+    bmi_category,
+    diabetes_risk_score,
+    start_date,
+    end_date,
+    is_current
+FROM 
+    healthcare_lakehouse.dim_patient_scd2
+WHERE 
+    patient_id IN ('P_1000', 'P_1001', 'P_1002')
+ORDER BY 
+    patient_id ASC, 
+    start_date ASC;
+
