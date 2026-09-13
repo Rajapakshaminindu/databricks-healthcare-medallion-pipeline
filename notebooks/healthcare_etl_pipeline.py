@@ -180,8 +180,122 @@ print("✅ Gold tables created successfully in Delta format.")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## STEP 5: SQL Analytics Verification
-# MAGIC Demonstrating serverless T-SQL querying over the Gold Delta tables.
+# MAGIC ## STEP 5: SCD Type 2 Dimension (Patient Medical & Demographic History)
+# MAGIC Tracks historical changes when patient demographic or risk tiers change over time.
+# MAGIC Preserves historical context using `start_date`, `end_date`, and `is_current` flags with Delta Lake.
+
+# COMMAND ----------
+
+from pyspark.sql.functions import current_date, to_date, lit, col
+from delta.tables import DeltaTable
+
+# 1. Initial Load of SCD2 Dimension from Silver (First Snapshot)
+initial_patient_dim = spark.table("healthcare_lakehouse.silver_patient_health") \
+    .select(
+        "patient_id",
+        "gender",
+        "city",
+        "age_bracket",
+        "bmi_category",
+        "diabetes_risk_score"
+    ) \
+    .dropDuplicates(["patient_id"]) \
+    .withColumn("start_date", to_date(lit("2026-01-01"))) \
+    .withColumn("end_date", lit(None).cast("date")) \
+    .withColumn("is_current", lit(True))
+
+initial_patient_dim.write \
+    .format("delta") \
+    .mode("overwrite") \
+    .saveAsTable("healthcare_lakehouse.dim_patient_scd2")
+
+print("✅ Initialized SCD Type 2 Dimension: healthcare_lakehouse.dim_patient_scd2")
+display(spark.table("healthcare_lakehouse.dim_patient_scd2").limit(5))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Simulate Ingestion of New Patient Updates (Batch 2)
+# MAGIC Demonstrating SCD Type 2 handling: Patient moves city or their diabetes risk score changes.
+
+# COMMAND ----------
+
+# Simulate 3 updated patients with new vitals/cities
+updates_data = [
+    ("P_1000", "Female", "Delhi", "30-49", "Obese", "High Risk"),        # Moved from Bengaluru to Delhi
+    ("P_1001", "Male", "Mumbai", "30-49", "Overweight", "High Risk"),     # Moved from Delhi to Mumbai, Risk increased
+    ("P_1002", "Female", "Chennai", "50-64", "Normal", "Moderate Risk"),  # Risk improved to Moderate Risk
+]
+
+updates_df = spark.createDataFrame(
+    updates_data,
+    ["patient_id", "gender", "city", "age_bracket", "bmi_category", "diabetes_risk_score"]
+)
+
+# SCD Type 2 Logic using Delta Lake:
+# Step A: Identify changed records and expire old active records
+target_table = DeltaTable.forName(spark, "healthcare_lakehouse.dim_patient_scd2")
+
+# Staged dataframe for merge: 
+# Records that match existing patient and have changes in tracked attributes
+staged_updates = updates_df.alias("updates") \
+    .join(
+        target_table.toDF().filter(col("is_current") == True).alias("target"),
+        "patient_id"
+    ) \
+    .where(
+        (col("updates.city") != col("target.city")) |
+        (col("updates.diabetes_risk_score") != col("target.diabetes_risk_score")) |
+        (col("updates.bmi_category") != col("target.bmi_category"))
+    ) \
+    .select(
+        col("updates.patient_id").alias("merge_key"),
+        col("updates.*")
+    )
+
+# Union staged updates with a dummy null key row to trigger insert for new version
+dummy_updates = updates_df.select(
+    lit(None).cast("string").alias("merge_key"),
+    col("*")
+)
+
+scd_source_df = staged_updates.unionByName(dummy_updates)
+
+# Delta Table MERGE:
+# 1. When matched & key is present -> Close out old record
+# 2. When not matched -> Insert new current record
+target_table.alias("target").merge(
+    scd_source_df.alias("source"),
+    "target.patient_id = source.merge_key AND target.is_current = true"
+).whenMatchedUpdate(
+    set={
+        "is_current": lit(False),
+        "end_date": current_date()
+    }
+).whenNotMatchedInsert(
+    values={
+        "patient_id": "source.patient_id",
+        "gender": "source.gender",
+        "city": "source.city",
+        "age_bracket": "source.age_bracket",
+        "bmi_category": "source.bmi_category",
+        "diabetes_risk_score": "source.diabetes_risk_score",
+        "start_date": current_date(),
+        "end_date": lit(None).cast("date"),
+        "is_current": lit(True)
+    }
+).execute()
+
+print("✅ Successfully executed SCD Type 2 MERGE into dim_patient_scd2.")
+display(spark.table("healthcare_lakehouse.dim_patient_scd2")
+    .filter(col("patient_id").isin(["P_1000", "P_1001", "P_1002"]))
+    .orderBy("patient_id", "start_date"))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## STEP 6: SQL Analytics Verification
+# MAGIC Demonstrating serverless T-SQL querying over Gold & SCD2 Dimension tables.
 
 # COMMAND ----------
 
@@ -200,9 +314,10 @@ print("✅ Gold tables created successfully in Delta format.")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## STEP 6: Delta Lake Time Travel & Transaction Log Audit
+# MAGIC ## STEP 7: Delta Lake Time Travel & Transaction Log Audit
 
 # COMMAND ----------
 
 # MAGIC %sql
 # MAGIC DESCRIBE HISTORY healthcare_lakehouse.silver_patient_health;
+
