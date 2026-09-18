@@ -180,3 +180,9 @@ The Gold layer tables are served directly to the **Power BI Clinical Decision Su
 **Rajapaksha Minindu**  
 * [GitHub Profile](https://github.com/Rajapakshaminindu)  
 * [LinkedIn](https://www.linkedin.com/)
+
+---
+
+## 📜 License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
