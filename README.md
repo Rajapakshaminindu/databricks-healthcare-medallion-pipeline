@@ -176,10 +176,7 @@ The Gold layer tables are served directly to the **Power BI Clinical Decision Su
 
 ---
 
-## 👨‍💻 Author
-**Rajapaksha Minindu**  
-* [GitHub Profile](https://github.com/Rajapakshaminindu)  
-* [LinkedIn](https://www.linkedin.com/)
+
 
 ---
 
